@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Renta Colombia 2026</title>
+<link rel="icon" type="image/png" href="logo-abba.png">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg1: #17140f; --bg2: #1f1b15; --bg3: #171410;
+    --text: #e0d5c1; --text-dim: #908878; --text-faint: #6a6255; --text-xfaint: #5e5848; --text-bold: #d8d0c0;
+    --green: #8fbf8a; --green-deep: #6b8f71; --green-bright: #6bdf71;
+    --red: #cf9080; --red-deep: #b07060; --red-hot: #cf6050;
+    --gold: #d0c080; --section-label: #a09080;
+    --card-bg: rgba(255,255,255,0.02); --card-border: rgba(255,255,255,0.05);
+    --input-bg: rgba(0,0,0,0.35); --input-border: rgba(255,255,255,0.08);
+  }
+  body {
+    font-family: 'DM Sans', 'Segoe UI', sans-serif;
+    background: linear-gradient(170deg, var(--bg1) 0%, var(--bg2) 50%, var(--bg3) 100%);
+    color: var(--text); min-height: 100vh; padding: 24px 16px;
+  }
+  .wrap { max-width: 560px; margin: 0 auto; }
+  .header { text-align: center; margin-bottom: 32px; }
+  .header .logo { display: block; margin: 0 auto 18px; max-width: 120px; height: auto; }
+  .header .tag { font-size: 11px; color: var(--text-xfaint); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 6px; }
+  .header h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+  .header .sub { font-size: 12px; color: var(--text-faint); margin-top: 6px; }
+  .section { background: var(--card-bg); border-radius: 16px; padding: 20px 22px; margin-bottom: 16px; border: 1px solid var(--card-border); }
+  .section.green { background: rgba(107,143,113,0.04); border-color: rgba(107,143,113,0.1); }
+  .section h2 { font-size: 13px; font-weight: 700; color: var(--section-label); margin-bottom: 16px; letter-spacing: 0.5px; }
+  .section h2.green { color: var(--green); margin-bottom: 4px; }
+  .section .sublabel { font-size: 11px; color: #5e6e55; margin-bottom: 16px; }
+
+  .field { margin-bottom: 16px; }
+  .field-head { display: flex; justify-content: space-between; align-items: baseline; }
+  .field-head label { font-size: 13px; color: #c8bfb0; font-weight: 500; }
+  .field-head .max { font-size: 10px; color: var(--text-faint); }
+  .field input {
+    width: 100%; padding: 10px 14px; margin-top: 4px;
+    background: var(--input-bg); border: 1px solid var(--input-border);
+    border-radius: 10px; color: #f0e8d8; font-size: 15px;
+    font-family: 'DM Mono', monospace; outline: none;
+  }
+  .field input:focus { border-color: rgba(255,255,255,0.18); }
+  .field .hint { font-size: 11px; color: var(--text-xfaint); margin-top: 3px; }
+
+  .toggle { display: flex; align-items: center; gap: 10px; cursor: pointer; margin-top: 4px; user-select: none; }
+  .toggle-track {
+    width: 38px; height: 22px; border-radius: 11px; position: relative;
+    background: var(--input-border); transition: background 0.2s;
+  }
+  .toggle-track.on { background: var(--green-deep); }
+  .toggle-thumb {
+    width: 18px; height: 18px; border-radius: 9px; background: #f0e8d8;
+    position: absolute; top: 2px; left: 2px; transition: left 0.2s;
+  }
+  .toggle-track.on .toggle-thumb { left: 18px; }
+  .toggle span { font-size: 13px; color: #b0a898; }
+  .toggle .tiny { font-size: 10px; color: var(--text-faint); }
+
+  .row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; }
+  .row .lbl { color: var(--text-dim); }
+  .row.bold .lbl { color: var(--text-bold); font-weight: 700; }
+  .row .val { font-family: 'DM Mono', monospace; }
+  .row.bold .val { font-weight: 700; }
+  .divider { border-top: 1px solid rgba(255,255,255,0.06); margin: 10px 0; }
+
+  .bar-section { margin-bottom: 14px; }
+  .bar-header { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
+  .bar-header .val { font-family: 'DM Mono', monospace; }
+  .bar-track { height: 28px; border-radius: 8px; overflow: hidden; }
+  .bar-track.red { background: rgba(207,144,128,0.15); }
+  .bar-track.green { background: rgba(107,143,113,0.15); }
+  .bar-fill { height: 100%; border-radius: 8px; transition: width 0.5s; min-width: 2%; }
+  .bar-fill.red { background: linear-gradient(90deg, #cf9080, #b07060); }
+  .bar-fill.green { background: linear-gradient(90deg, #8fbf8a, #6b8f71); }
+
+  .boxes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+  .box { padding: 16px 18px; background: rgba(0,0,0,0.3); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
+  .box .box-label { font-size: 10px; color: #807868; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+  .box .box-val { font-size: 24px; font-weight: 700; font-family: 'DM Mono', monospace; }
+  .box .box-sub { font-size: 11px; color: var(--text-faint); margin-top: 3px; }
+
+  .diag-card { padding: 8px 12px; border-radius: 8px; font-size: 12px; margin-bottom: 8px; line-height: 1.6; }
+  .diag-card.gold { background: rgba(200,180,100,0.08); color: #c0b070; }
+  .diag-card.green { background: rgba(107,223,113,0.06); color: var(--green); }
+  .diag-card.red { background: rgba(207,96,80,0.08); color: var(--red); }
+  .diag-card.greencheck { background: rgba(107,143,113,0.08); color: var(--green); }
+  .disclaimer { font-size: 10px; color: #4e4838; margin-top: 10px; font-style: italic; line-height: 1.5; }
+
+  details { background: var(--card-bg); border-radius: 16px; padding: 18px 22px; border: 1px solid var(--card-border); margin-bottom: 20px; }
+  summary { font-size: 13px; font-weight: 700; color: #807868; cursor: pointer; }
+  .ref-table { width: 100%; margin-top: 12px; font-size: 12px; border-collapse: collapse; }
+  .ref-table th { padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.06); color: var(--text-faint); text-align: left; }
+  .ref-table td { padding: 5px 0; font-family: 'DM Mono', monospace; }
+  .ref-table tr.active td { color: #f0e8d8; }
+  .ref-table tr:not(.active) td { color: var(--text-faint); }
+  .uvt-note { font-size: 11px; color: var(--text-xfaint); text-align: right; }
+
+  .cta-section {
+    text-align: center; padding: 32px 22px; margin-bottom: 16px;
+    background: linear-gradient(135deg, rgba(107,223,113,0.06) 0%, rgba(208,192,128,0.06) 100%);
+    border: 1px solid rgba(107,223,113,0.15); border-radius: 16px;
+    animation: ctaFadeIn 0.6s ease-out;
+  }
+  @keyframes ctaFadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  .cta-question {
+    font-size: 17px; font-weight: 700; color: var(--text-bold);
+    margin-bottom: 20px; line-height: 1.4;
+  }
+  .cta-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 14px 28px; border-radius: 12px; font-size: 15px; font-weight: 700;
+    color: #17140f; text-decoration: none;
+    background: linear-gradient(135deg, #8fbf8a, #6bdf71);
+    box-shadow: 0 4px 20px rgba(107,223,113,0.25);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 28px rgba(107,223,113,0.35); }
+  .cta-btn:active { transform: translateY(0); }
+  .cta-btn svg { width: 18px; height: 18px; }
+  .cta-sub-bold {
+    font-size: 13px; font-weight: 700; color: var(--green);
+    margin-top: 18px; margin-bottom: 4px;
+  }
+  .cta-sub { font-size: 12px; color: var(--text-faint); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <img src="logo-abba.png" alt="ABBA Asesoría" class="logo">
+    <div class="tag">Colombia · Año gravable 2026</div>
+    <h1>Calculadora de Renta</h1>
+    <div class="sub">UVT $52.374 · Ley 2277/2022 · Personas Naturales Residentes</div>
+  </div>
+
+  <!-- INGRESOS -->
+  <div class="section">
+    <h2>INGRESOS BRUTOS ANUALES</h2>
+    <div class="field">
+      <div class="field-head"><label>Laborales (salario, prestaciones)</label></div>
+      <input type="text" inputmode="numeric" id="lab" value="80.000.000" data-raw="80000000">
+    </div>
+    <div class="field">
+      <div class="field-head"><label>De capital (arriendos, intereses, regalías)</label></div>
+      <input type="text" inputmode="numeric" id="cap" value="0" data-raw="0">
+    </div>
+    <div class="field">
+      <div class="field-head"><label>No laborales (honorarios, independientes)</label></div>
+      <input type="text" inputmode="numeric" id="nolab" value="0" data-raw="0">
+    </div>
+  </div>
+
+  <!-- INCRNGO -->
+  <div class="section">
+    <h2>APORTES OBLIGATORIOS (INCRNGO)</h2>
+    <div class="field">
+      <div class="field-head"><label>Salud obligatoria (anual)</label></div>
+      <input type="text" inputmode="numeric" id="salud" value="0" data-raw="0">
+      <div class="hint">0 = calcula 4% automático</div>
+    </div>
+    <div class="field">
+      <div class="field-head"><label>Pensión obligatoria (anual)</label></div>
+      <input type="text" inputmode="numeric" id="pension" value="0" data-raw="0">
+      <div class="hint">0 = calcula 4% automático</div>
+    </div>
+    <div class="field">
+      <div class="field-head"><label>Fondo Solidaridad Pensional</label></div>
+      <input type="text" inputmode="numeric" id="fsp" value="0" data-raw="0">
+    </div>
+  </div>
+
+  <!-- OPTIMIZACIÓN -->
+  <div class="section green">
+    <h2 class="green">RENTAS EXENTAS Y DEDUCCIONES</h2>
+    <div class="sublabel" id="limLabel"></div>
+    <div class="field">
+      <div class="field-head"><label>Aportes voluntarios pensión</label><span class="max" id="maxVolPen"></span></div>
+      <input type="text" inputmode="numeric" id="volPen" value="0" data-raw="0">
+    </div>
+    <div class="field">
+      <div class="field-head"><label>Aportes AFC (ahorro vivienda)</label><span class="max" id="maxAfc"></span></div>
+      <input type="text" inputmode="numeric" id="afc" value="0" data-raw="0">
+    </div>
+    <div class="field">
+      <div class="field-head"><label>Intereses crédito vivienda (anual)</label><span class="max" id="maxIntViv"></span></div>
+      <input type="text" inputmode="numeric" id="intViv" value="0" data-raw="0">
+    </div>
+    <div class="field">
+      <div class="field-head"><label>Medicina prepagada (anual)</label><span class="max" id="maxMedPrep"></span></div>
+      <input type="text" inputmode="numeric" id="medPrep" value="0" data-raw="0">
+    </div>
+    <div class="field">
+      <div class="field-head"><label>Dependientes (cantidad, máx 4)</label></div>
+      <input type="number" id="deps" value="0">
+      <div class="hint" id="hintDeps"></div>
+    </div>
+    <div class="field">
+      <div class="field-head"><label>GMF total pagado (4×1000)</label></div>
+      <input type="text" inputmode="numeric" id="gmf" value="0" data-raw="0">
+      <div class="hint">El 50% es deducible</div>
+    </div>
+    <div class="toggle" id="toggleFactura">
+      <div class="toggle-track" id="facturaTrack"><div class="toggle-thumb"></div></div>
+      <span>Deducción 5% factura electrónica 2026 <span class="tiny">(máx 240 UVT)</span></span>
+    </div>
+  </div>
+
+  <!-- DEPURACIÓN -->
+  <div class="section" id="depuracion"></div>
+
+  <!-- COMPARACIÓN -->
+  <div class="section" id="comparacion"></div>
+
+  <!-- DIAGNÓSTICO -->
+  <div class="section" id="diagnostico"></div>
+
+  <!-- CTA -->
+  <div class="cta-section" id="cta-section">
+    <div class="cta-question" id="cta-question">¿Quieres saber si puedes reducir este número?</div>
+    <a class="cta-btn" id="cta-link" href="https://calendly.com/abba-asesoria/agenda-tu-sesion-de-planificacion-financiera-clon" target="_blank" rel="noopener">
+      Agenda tu diagnóstico gratuito
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 17l9.2-9.2M17 17V7H7"/></svg>
+    </a>
+    <div class="cta-sub-bold">Te muestro si puedes reducir esta carga</div>
+    <div class="cta-sub">Elige el horario que te funcione. Sesión de 45 min por videollamada. Sin costo.</div>
+  </div>
+
+  <!-- TABLA -->
+  <details>
+    <summary>Tabla Art. 241 ET — Tarifas marginales</summary>
+    <table class="ref-table" id="refTable"></table>
+  </details>
+</div>
+
+<script>
+const UVT = 52374;
+const fmt = n => "$" + Math.round(n).toLocaleString("es-CO");
+const pct = n => (n * 100).toFixed(1) + "%";
+
+const TABLA = [
+  { desde: 0, hasta: 1090, tarifa: 0, base: 0 },
+  { desde: 1090, hasta: 1700, tarifa: 0.19, base: 0 },
+  { desde: 1700, hasta: 4100, tarifa: 0.28, base: 116 },
+  { desde: 4100, hasta: 8670, tarifa: 0.33, base: 788 },
+  { desde: 8670, hasta: 18970, tarifa: 0.35, base: 1296 },
+  { desde: 18970, hasta: 31000, tarifa: 0.37, base: 4901 },
+  { desde: 31000, hasta: 100000, tarifa: 0.39, base: 9352 },
+];
+
+function calcImp(uvt) {
+  for (let i = TABLA.length - 1; i >= 0; i--) {
+    if (uvt > TABLA[i].desde) return (uvt - TABLA[i].desde) * TABLA[i].tarifa + TABLA[i].base;
+  }
+  return 0;
+}
+
+let factura = false;
+
+// --- Formateo de inputs con puntos de miles ---
+const moneyInputs = ["lab", "cap", "nolab", "salud", "pension", "fsp", "volPen", "afc", "intViv", "medPrep", "gmf"];
+
+function formatNumber(n) {
+  if (n === 0) return "0";
+  return n.toLocaleString("es-CO");
+}
+
+function parseRaw(str) {
+  return Number(String(str).replace(/\./g, "").replace(/,/g, "")) || 0;
+}
+
+function val(id) {
+  const el = document.getElementById(id);
+  if (el.dataset.raw !== undefined) return parseRaw(el.dataset.raw);
+  return Number(el.value) || 0;
+}
+
+function setupMoneyInput(id) {
+  const el = document.getElementById(id);
+  el.addEventListener("input", function() {
+    const cursorEnd = this.selectionStart;
+    const prevLen = this.value.length;
+    const raw = parseRaw(this.value);
+    this.dataset.raw = raw;
+    const formatted = formatNumber(raw);
+    this.value = formatted;
+    // Ajustar cursor
+    const diff = formatted.length - prevLen;
+    const newPos = Math.max(0, cursorEnd + diff);
+    this.setSelectionRange(newPos, newPos);
+    render();
+  });
+  // Formatear valor inicial
+  const raw = parseRaw(el.value);
+  el.dataset.raw = raw;
+  el.value = formatNumber(raw);
+}
+
+function render() {
+  const lab = val("lab"), cap = val("cap"), nolab = val("nolab");
+  const total = lab + cap + nolab;
+  const s = val("salud") || total * 0.04;
+  const pe = val("pension") || total * 0.04;
+  const fsp = val("fsp");
+  const incr = s + pe + fsp;
+  const neto = Math.max(0, total - incr);
+  const lim = Math.min(neto * 0.4, 1340 * UVT);
+
+  const items = [
+    { n: "25% renta exenta laboral", v: Math.min(neto * 0.25, 790 * UVT) },
+    { n: "Aportes vol. pensión", v: Math.min(val("volPen"), 3800 * UVT) },
+    { n: "Aportes AFC", v: Math.min(val("afc"), 3800 * UVT) },
+    { n: "Intereses vivienda", v: Math.min(val("intViv"), 1200 * UVT) },
+    { n: "Medicina prepagada", v: Math.min(val("medPrep"), 192 * UVT) },
+    { n: "Dependientes", v: Math.min(val("deps"), 4) * 72 * UVT },
+    { n: "50% GMF", v: val("gmf") * 0.5 },
+    { n: "5% factura electrónica", v: factura ? Math.min(total * 0.05, 240 * UVT) : 0 },
+  ].filter(i => i.v > 0);
+
+  const sum = items.reduce((a, i) => a + i.v, 0);
+  const aplicable = Math.min(sum, lim);
+  const exceso = Math.max(0, sum - lim);
+  const espacio = Math.max(0, lim - aplicable);
+
+  const rl = Math.max(0, neto - aplicable);
+  const rlUVT = rl / UVT;
+  const imp = calcImp(rlUVT) * UVT;
+  const impSin = calcImp(neto / UVT) * UVT;
+  const ahorro = impSin - imp;
+
+  const tmObj = TABLA.slice().reverse().find(t => rlUVT >= t.desde);
+  const tm = tmObj ? tmObj.tarifa : 0;
+  const te = total > 0 ? imp / total : 0;
+  const declara = total >= 1400 * UVT;
+
+  // Static labels
+  document.getElementById("limLabel").textContent = `Límite global: 40% del ingreso neto o 1.340 UVT (${fmt(1340 * UVT)}), el menor`;
+  document.getElementById("maxVolPen").textContent = "máx " + fmt(3800 * UVT);
+  document.getElementById("maxAfc").textContent = "máx " + fmt(3800 * UVT);
+  document.getElementById("maxIntViv").textContent = "máx " + fmt(1200 * UVT);
+  document.getElementById("maxMedPrep").textContent = "máx " + fmt(192 * UVT);
+  document.getElementById("hintDeps").textContent = "72 UVT c/u = " + fmt(72 * UVT);
+
+  // DEPURACIÓN
+  let h = `<h2 style="margin-bottom:16px">DEPURACIÓN</h2>`;
+  const row = (l, v, color, bold) => `<div class="row${bold ? ' bold' : ''}"><span class="lbl">${l}</span><span class="val" style="color:${color || ''}">${fmt(v)}</span></div>`;
+
+  h += row("Ingresos brutos", total, "", true);
+  h += row("(−) INCRNGO", incr);
+  h += row("Ingreso neto", neto, "", true);
+  h += `<div class="divider"></div>`;
+  items.forEach(i => { h += row("(−) " + i.n, i.v, "#8fbf8a"); });
+  h += `<div class="divider"></div>`;
+  h += row("Total exenciones/deducciones solicitadas", sum, "", true);
+  h += row("Límite aplicable (40% / 1.340 UVT)", lim, "#d0c080");
+  h += row("Efectivamente aplicado", aplicable, "#8fbf8a", true);
+  if (exceso > 0) h += row("⚠ Excedente NO deducible", exceso, "#cf6050");
+  if (espacio > 0 && tm > 0) h += row("✦ Espacio disponible para optimizar", espacio, "#6bdf71");
+  h += `<div class="divider"></div>`;
+  h += row("RENTA LÍQUIDA GRAVABLE", rl, "", true);
+  h += `<div class="uvt-note">${rlUVT.toFixed(0)} UVT · Tarifa marginal ${pct(tm)}</div>`;
+  document.getElementById("depuracion").innerHTML = h;
+
+  // COMPARACIÓN
+  const barMax = Math.max(impSin, 1);
+  const barW = v => Math.max(2, (v / barMax) * 100);
+  let c = `<h2 style="margin-bottom:18px">IMPUESTO: SIN vs CON OPTIMIZACIÓN</h2>`;
+  c += `<div class="bar-section">
+    <div class="bar-header"><span>Sin optimizar</span><span class="val" style="color:#cf9080">${fmt(impSin)}</span></div>
+    <div class="bar-track red"><div class="bar-fill red" style="width:${barW(impSin)}%"></div></div>
+  </div>`;
+  c += `<div class="bar-section">
+    <div class="bar-header"><span>Con optimización</span><span class="val" style="color:#8fbf8a">${fmt(imp)}</span></div>
+    <div class="bar-track green"><div class="bar-fill green" style="width:${barW(imp)}%"></div></div>
+  </div>`;
+  c += `<div class="boxes">
+    <div class="box" style="background:rgba(107,223,113,0.06);border-color:rgba(107,223,113,0.19)">
+      <div class="box-label">Ahorro</div>
+      <div class="box-val" style="color:#6bdf71">${fmt(ahorro)}</div>
+      ${impSin > 0 ? `<div class="box-sub">−${((ahorro / impSin) * 100).toFixed(0)}% del impuesto</div>` : ''}
+    </div>
+    <div class="box" style="background:rgba(208,192,128,0.06);border-color:rgba(208,192,128,0.19)">
+      <div class="box-label">Tarifa efectiva</div>
+      <div class="box-val" style="color:#d0c080">${pct(te)}</div>
+      <div class="box-sub">sobre ingreso bruto</div>
+    </div>
+  </div>`;
+  document.getElementById("comparacion").innerHTML = c;
+
+  // DIAGNÓSTICO
+  let d = `<h2 style="margin-bottom:14px">DIAGNÓSTICO</h2>`;
+  if (declara) d += `<div class="diag-card gold">📌 Obligado a declarar renta (ingresos ≥ 1.400 UVT)</div>`;
+  else d += `<div class="diag-card greencheck">✓ No obligado a declarar renta por ingresos</div>`;
+  if (espacio > 0 && tm > 0) d += `<div class="diag-card green"><strong>✦ Puede optimizar ${fmt(espacio)} más.</strong> Cada peso de deducción adicional le ahorra ${pct(tm)} en impuesto.</div>`;
+  else if (espacio > 0 && tm === 0) d += `<div class="diag-card greencheck">✓ Su renta líquida ya está en el tramo exento (0%). Las deducciones actuales son suficientes.</div>`;
+  if (exceso > 0) d += `<div class="diag-card red"><strong>⚠ Excede el tope en ${fmt(exceso)}.</strong> Redistribuya: por ejemplo, reduzca AFC/voluntarios y use ese dinero en inversiones que generen rendimiento gravado a menor tarifa.</div>`;
+  if (tm >= 0.35 && espacio > 0) d += `<div class="diag-card gold"><strong>💡 Tarifa marginal alta (${pct(tm)}).</strong> Maximizar el espacio restante le ahorraría hasta ${fmt(espacio * tm)} adicionales.</div>`;
+  d += `<div class="disclaimer">Herramienta informativa basada en Art. 206, 241, 330, 336 ET · Ley 2277/2022 · UVT Res. DIAN 000238/2025. Consulte con un contador certificado.</div>`;
+  document.getElementById("diagnostico").innerHTML = d;
+
+  // TABLA REFERENCIA
+  let t = `<thead><tr><th>Desde (UVT)</th><th>Hasta</th><th>Tarifa</th></tr></thead><tbody>`;
+  TABLA.forEach((r, i) => {
+    const active = rlUVT >= r.desde && (i === TABLA.length - 1 || rlUVT < TABLA[i + 1].desde);
+    t += `<tr class="${active ? 'active' : ''}"><td>${r.desde.toLocaleString()}</td><td>${r.hasta.toLocaleString()}</td><td>${(r.tarifa * 100)}%</td></tr>`;
+  });
+  t += `</tbody>`;
+  document.getElementById("refTable").innerHTML = t;
+}
+
+// Inicializar formateo en inputs monetarios
+moneyInputs.forEach(id => setupMoneyInput(id));
+
+// Listener para deps (sigue siendo numérico)
+document.getElementById("deps").addEventListener("input", render);
+
+document.getElementById("toggleFactura").addEventListener("click", () => {
+  factura = !factura;
+  document.getElementById("facturaTrack").classList.toggle("on", factura);
+  render();
+});
+
+// Initial render
+render();
+</script>
+</body>
+</html>
