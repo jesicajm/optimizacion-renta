@@ -6,6 +6,235 @@
 <title>Calculadora de Renta Colombia 2026</title>
 <link rel="icon" type="image/png" href="logo-abba.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- SEO & Open Graph -->
+<meta name="description" content="Calculadora gratuita de declaración de renta 2026 para personas naturales en Colombia. Simula tu impuesto, optimiza deducciones y descubre cuánto puedes ahorrar. ABBA Consultor.">
+<meta property="og:title" content="Calculadora de Renta Colombia 2026 — ¿Cuánto pagas de impuesto?">
+<meta property="og:description" content="Simula tu declaración de renta como persona natural. Descubre tu tarifa efectiva y cuánto puedes ahorrar con deducciones legales.">
+<meta property="og:type" content="website">
+
+<!-- Google Tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-18090223812"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'AW-18090223812');
+
+// ===== UTM CAPTURE =====
+function getUTMParams() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    source: params.get('utm_source') || 'directo',
+    medium: params.get('utm_medium') || 'none',
+    campaign: params.get('utm_campaign') || 'none',
+    content: params.get('utm_content') || 'none',
+    term: params.get('utm_term') || 'none'
+  };
+}
+const utmData = getUTMParams();
+
+// ===== LEAD GATE =====
+let leadCaptured = false;
+let gateTriggered = false;
+
+function showLeadModal() {
+  if (leadCaptured) return;
+  const modal = document.getElementById('leadModal');
+  modal.classList.add('show');
+  document.body.style.overflow = 'hidden';
+  modal.onclick = function(e) {
+    if (e.target === modal) {
+      const card = modal.querySelector('.modal-card');
+      card.style.animation = 'none';
+      void card.offsetHeight;
+      card.style.animation = 'shake 0.4s ease';
+    }
+  };
+  if (typeof fbq !== 'undefined') {
+    fbq('track', 'ViewContent', { content_name: 'calculadora_renta_modal' });
+  }
+}
+
+function closeModal() {
+  if (!leadCaptured) return;
+  document.getElementById('leadModal').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+function unlockResults() {
+  document.querySelectorAll('.results-locked').forEach(el => {
+    el.classList.remove('results-locked');
+  });
+  // Hide the calculate button since results are now visible
+  const btnSection = document.getElementById('calcBtnSection');
+  if (btnSection) btnSection.style.display = 'none';
+}
+
+function validateEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+async function submitLead() {
+  const nombre = document.getElementById('lead-nombre').value.trim();
+  const email = document.getElementById('lead-email').value.trim();
+  const telefono = document.getElementById('lead-telefono').value.trim();
+  
+  ['fg-nombre', 'fg-email', 'fg-telefono'].forEach(id => {
+    document.getElementById(id).classList.remove('error');
+  });
+  
+  let hasError = false;
+  if (!nombre) { document.getElementById('fg-nombre').classList.add('error'); hasError = true; }
+  if (!validateEmail(email)) { document.getElementById('fg-email').classList.add('error'); hasError = true; }
+  if (!telefono || telefono.replace(/\D/g, '').length < 7) { document.getElementById('fg-telefono').classList.add('error'); hasError = true; }
+  if (hasError) return;
+  
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true;
+  btn.textContent = 'Procesando...';
+  
+  const lab = val('lab'), cap = val('cap'), nolab = val('nolab');
+  const ingresosBrutos = lab + cap + nolab;
+  
+  const leadData = {
+    nombre, email, telefono,
+    calculadora: 'renta_2026',
+    ingresos_brutos: ingresosBrutos,
+    ingresos_laborales: lab,
+    ingresos_capital: cap,
+    ingresos_no_laborales: nolab,
+    utm_source: utmData.source,
+    utm_medium: utmData.medium,
+    utm_campaign: utmData.campaign,
+    utm_content: utmData.content,
+    utm_term: utmData.term,
+    pagina: window.location.pathname,
+    user_agent: navigator.userAgent
+  };
+  
+  // Save to Firestore
+  try {
+    if (window._fb && window._fb.db) {
+      await window._fb.addDoc(
+        window._fb.collection(window._fb.db, 'leads_calculadora'),
+        { ...leadData, created_at: window._fb.serverTimestamp(), status: 'nuevo' }
+      );
+    }
+  } catch (err) { console.error('Firestore:', err); }
+  
+  // Firebase Function
+  try {
+    if (window._fb && window._fb.functions) {
+      const trackLeadEvent = window._fb.httpsCallable(window._fb.functions, 'trackLeadEvent');
+      trackLeadEvent(leadData).catch(err => console.log('Fn error:', err));
+    }
+  } catch (err) { console.error('Fn:', err); }
+
+  
+  // Google Ads Lead Conversion
+  if (typeof gtag !== 'undefined') {
+    gtag('event', 'conversion', {
+      'send_to': 'AW-18090223812/afmBCJ7l-Z0cEMTRi7JD',
+      'value': 25000,
+      'currency': 'COP'
+    });
+    gtag('event', 'generate_lead', {
+      'event_category': 'calculadora_renta',
+      'event_label': 'lead_capturado',
+      'value': ingresosBrutos
+    });
+  }
+  
+  // Meta Pixel Lead
+  if (typeof fbq !== 'undefined') {
+    fbq('track', 'Lead', {
+      content_name: 'calculadora_renta',
+      value: 25000,
+      currency: 'COP'
+    });
+  }
+  
+  leadCaptured = true;
+  unlockResults();
+  closeModal();
+  
+  setTimeout(() => {
+    document.getElementById('depuracion').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 300);
+}
+
+// Trigger modal ONLY via the "Calcular" button (onclick in HTML)
+// No auto-triggers on focus or input
+
+// Track Contacto WhatsApp on CTA click
+document.getElementById('cta-link').addEventListener('click', function() {
+  if (typeof gtag !== 'undefined') {
+    gtag('event', 'conversion', {
+      'send_to': 'AW-18090223812/Ef6tCNiN-p0cEMTRi7JD',
+      'value': 100000,
+      'currency': 'COP'
+    });
+  }
+  if (typeof fbq !== 'undefined') {
+    fbq('track', 'Contact', { content_name: 'whatsapp_asesor', value: 1, currency: 'COP' });
+  }
+  try {
+    if (window._fb && window._fb.functions) {
+      const fn = window._fb.httpsCallable(window._fb.functions, 'trackScheduleEvent');
+      fn({ email: document.getElementById('lead-email').value, utm_source: utmData.source, utm_medium: utmData.medium, utm_campaign: utmData.campaign, tipo: 'whatsapp' }).catch(e => {});
+    }
+  } catch (e) {}
+});
+
+// Enter key submits modal
+document.querySelectorAll('#leadModal input').forEach(input => {
+  input.addEventListener('keypress', function(e) { if (e.key === 'Enter') submitLead(); });
+});
+
+// Update WhatsApp link with UTMs and calculator context
+function updateWhatsAppLink() {
+  const adSource = utmData.source !== 'directo' ? utmData.source : 'calculadora_renta';
+  const adMedium = utmData.medium !== 'none' ? utmData.medium : 'web';
+  const carga = document.getElementById('cta-question').textContent;
+  const mensaje = encodeURIComponent('Hola, acabo de usar la calculadora de renta y quiero saber cómo puedo optimizar mi impuesto. Vine desde: ' + adSource);
+  document.getElementById('cta-link').href = 'https://wa.me/573104278004?text=' + mensaje;
+}
+updateWhatsAppLink();
+
+</script>
+
+<!-- Meta Pixel — REEMPLAZA TU_PIXEL_ID -->
+<script>
+  !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+  n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+  document,'script','https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', 'TU_PIXEL_ID');
+  fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=TU_PIXEL_ID&ev=PageView&noscript=1"/></noscript>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+  import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-functions.js";
+  const firebaseConfig = {
+    apiKey: "TU_API_KEY",
+    authDomain: "TU_PROYECTO.firebaseapp.com",
+    projectId: "TU_PROYECTO",
+    storageBucket: "TU_PROYECTO.appspot.com",
+    messagingSenderId: "TU_SENDER_ID",
+    appId: "TU_APP_ID"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const functions = getFunctions(app);
+  window._fb = { db, collection, addDoc, serverTimestamp, functions, httpsCallable };
+</script>
+
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -17,6 +246,217 @@
     --card-bg: rgba(255,255,255,0.02); --card-border: rgba(255,255,255,0.05);
     --input-bg: rgba(0,0,0,0.35); --input-border: rgba(255,255,255,0.08);
   }
+
+  /* ===== LEAD CAPTURE MODAL ===== */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(23, 20, 15, 0.85);
+    backdrop-filter: blur(6px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .modal-overlay.show { display: flex; }
+
+  .modal-card {
+    background: #1f1b15;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 32px 24px;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    animation: ctaFadeIn 0.4s ease both;
+  }
+
+  .modal-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .modal-subtitle {
+    font-size: 14px;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+  .modal-lock {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(208,192,128,0.08);
+    border-left: 3px solid var(--gold);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--gold);
+    margin-bottom: 20px;
+    line-height: 1.4;
+  }
+
+  .form-group { margin-bottom: 16px; }
+  .form-group label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+  .form-group input[type="text"],
+  .form-group input[type="email"],
+  .form-group input[type="tel"] {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    background: var(--input-bg);
+    color: var(--text);
+    transition: all 0.2s;
+  }
+  .form-group input:focus {
+    outline: none;
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(143,191,138,0.15);
+  }
+  .form-group input::placeholder { color: var(--text-faint); }
+  .form-group.error input { border-color: var(--red-hot) !important; }
+  .form-error {
+    color: var(--red-hot);
+    font-size: 12px;
+    margin-top: 4px;
+    display: none;
+  }
+  .form-group.error .form-error { display: block; }
+
+  .btn-submit {
+    width: 100%;
+    padding: 14px;
+    background: var(--green-bright);
+    color: var(--bg1);
+    border: none;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 8px;
+  }
+  .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 28px rgba(107,223,113,0.35); }
+  .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .form-privacy {
+    font-size: 11px;
+    color: var(--text-faint);
+    text-align: center;
+    margin-top: 12px;
+    line-height: 1.5;
+  }
+
+  .results-locked { display: none !important; }
+
+  /* ===== CALCULATE BUTTON ===== */
+  .calc-cta-section {
+    text-align: center;
+    padding: 28px 16px 12px;
+  }
+  .calc-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 36px;
+    background: var(--green-bright);
+    color: var(--bg1);
+    border: none;
+    border-radius: 100px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 24px rgba(107,223,113,0.3);
+  }
+  .calc-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(107,223,113,0.45);
+  }
+  .calc-btn:active { transform: translateY(0); }
+  .calc-btn-sub {
+    font-size: 12px;
+    color: var(--text-faint);
+    margin-top: 10px;
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-6px); }
+    80% { transform: translateX(6px); }
+  }
+
+  /* ===== SOCIAL PROOF ===== */
+  .social-proof {
+    margin-top: 24px;
+    padding: 20px 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+  }
+  .proof-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-faint);
+    margin-bottom: 14px;
+    text-align: center;
+  }
+  .proof-items { display: flex; flex-direction: column; gap: 12px; }
+  .proof-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+  .proof-icon {
+    flex-shrink: 0;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: rgba(107,223,113,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: var(--green-bright);
+  }
+  .proof-stat {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--card-border);
+  }
+  .stat-box { text-align: center; }
+  .stat-number {
+    font-family: 'DM Mono', monospace;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--green);
+  }
+  .stat-label { font-size: 10px; color: var(--text-faint); margin-top: 2px; }
+
   body {
     font-family: 'DM Sans', 'Segoe UI', sans-serif;
     background: linear-gradient(170deg, var(--bg1) 0%, var(--bg2) 50%, var(--bg3) 100%);
@@ -130,6 +570,42 @@
 </style>
 </head>
 <body>
+
+<!-- LEAD CAPTURE MODAL -->
+<div class="modal-overlay" id="leadModal">
+  <div class="modal-card">
+    <div class="modal-title">¡Tu cálculo está casi listo!</div>
+    <div class="modal-subtitle">Ingresa tus datos para ver tu resultado completo: depuración detallada, comparación sin vs con optimización, y diagnóstico personalizado de ahorro.</div>
+    
+    <div class="modal-lock">
+      <span>🔒</span>
+      <span>Los resultados detallados requieren tus datos para enviarte un análisis personalizado.</span>
+    </div>
+    
+    <div class="form-group" id="fg-nombre">
+      <label>Nombre completo</label>
+      <input type="text" id="lead-nombre" placeholder="Ej: Carlos Martínez">
+      <div class="form-error">Ingresa tu nombre</div>
+    </div>
+    
+    <div class="form-group" id="fg-email">
+      <label>Email</label>
+      <input type="email" id="lead-email" placeholder="tu@email.com">
+      <div class="form-error">Ingresa un email válido</div>
+    </div>
+    
+    <div class="form-group" id="fg-telefono">
+      <label>WhatsApp / Teléfono</label>
+      <input type="tel" id="lead-telefono" placeholder="300 123 4567">
+      <div class="form-error">Ingresa tu número (mínimo 7 dígitos)</div>
+    </div>
+    
+    <button class="btn-submit" id="btn-submit" onclick="submitLead()">Ver mi resultado completo →</button>
+    
+    <div class="form-privacy">🔒 Tus datos están seguros. No compartimos tu información.</div>
+  </div>
+</div>
+
 <div class="wrap">
   <div class="header">
     <img src="logo-abba.png" alt="ABBA Asesoría" class="logo">
@@ -143,7 +619,7 @@
     <h2>INGRESOS BRUTOS ANUALES</h2>
     <div class="field">
       <div class="field-head"><label>Laborales (salario, prestaciones)</label></div>
-      <input type="text" inputmode="numeric" id="lab" value="80.000.000" data-raw="80000000">
+      <input type="text" inputmode="numeric" id="lab" value="0" data-raw="0">
     </div>
     <div class="field">
       <div class="field-head"><label>De capital (arriendos, intereses, regalías)</label></div>
@@ -161,12 +637,12 @@
     <div class="field">
       <div class="field-head"><label>Salud obligatoria (anual)</label></div>
       <input type="text" inputmode="numeric" id="salud" value="0" data-raw="0">
-      <div class="hint">0 = calcula 4% automático</div>
+      <div class="hint">Déjalo en 0 y se calcula automático (4% de tus ingresos)</div>
     </div>
     <div class="field">
       <div class="field-head"><label>Pensión obligatoria (anual)</label></div>
       <input type="text" inputmode="numeric" id="pension" value="0" data-raw="0">
-      <div class="hint">0 = calcula 4% automático</div>
+      <div class="hint">Déjalo en 0 y se calcula automático (4% de tus ingresos)</div>
     </div>
     <div class="field">
       <div class="field-head"><label>Fondo Solidaridad Pensional</label></div>
@@ -175,7 +651,7 @@
   </div>
 
   <!-- OPTIMIZACIÓN -->
-  <div class="section green">
+  <div class="section green" id="seccionOptimizacion">
     <h2 class="green">RENTAS EXENTAS Y DEDUCCIONES</h2>
     <div class="sublabel" id="limLabel"></div>
     <div class="field">
@@ -210,24 +686,33 @@
     </div>
   </div>
 
+  <!-- BOTÓN CALCULAR -->
+  <div class="calc-cta-section" id="calcBtnSection">
+    <button class="calc-btn" id="btnCalcular" onclick="showLeadModal()">
+      Calcular mi impuesto
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="20" height="20"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+    <div class="calc-btn-sub">Gratis · Resultado inmediato · Incluye diagnóstico de ahorro</div>
+  </div>
+
   <!-- DEPURACIÓN -->
-  <div class="section" id="depuracion"></div>
+  <div class="section results-locked" id="depuracion"></div>
 
   <!-- COMPARACIÓN -->
-  <div class="section" id="comparacion"></div>
+  <div class="section results-locked" id="comparacion"></div>
 
   <!-- DIAGNÓSTICO -->
-  <div class="section" id="diagnostico"></div>
+  <div class="section results-locked" id="diagnostico"></div>
 
   <!-- CTA -->
-  <div class="cta-section" id="cta-section">
+  <div class="cta-section results-locked" id="cta-section">
     <div class="cta-question" id="cta-question">¿Quieres saber si puedes reducir este número?</div>
-    <a class="cta-btn" id="cta-link" href="https://calendly.com/abba-asesoria/agenda-tu-sesion-de-planificacion-financiera-clon" target="_blank" rel="noopener">
-      Agenda tu diagnóstico gratuito
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 17l9.2-9.2M17 17V7H7"/></svg>
+    <a class="cta-btn" id="cta-link" href="https://wa.me/573104278004?text=Hola%2C%20acabo%20de%20usar%20la%20calculadora%20de%20renta%20y%20quiero%20saber%20c%C3%B3mo%20puedo%20optimizar%20mi%20impuesto" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 00.611.611l4.458-1.495A11.952 11.952 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.352 0-4.55-.686-6.406-1.866l-.447-.278-2.648.888.888-2.648-.278-.447A9.953 9.953 0 012 12C2 6.486 6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/></svg>
+      Hablar con un asesor
     </a>
-    <div class="cta-sub-bold">Te muestro si puedes reducir esta carga</div>
-    <div class="cta-sub">Elige el horario que te funcione. Sesión de 45 min por videollamada. Sin costo.</div>
+    <div class="cta-sub-bold">Te ayudamos a reducir tu carga tributaria</div>
+    <div class="cta-sub">Respuesta inmediata por WhatsApp. Sin compromiso.</div>
   </div>
 
   <!-- TABLA -->
@@ -235,6 +720,40 @@
     <summary>Tabla Art. 241 ET — Tarifas marginales</summary>
     <table class="ref-table" id="refTable"></table>
   </details>
+
+  <!-- SOCIAL PROOF -->
+  <div class="social-proof">
+    <div class="proof-title">¿Por qué confiar en ABBA Consultor?</div>
+    <div class="proof-items">
+      <div class="proof-item">
+        <div class="proof-icon">✓</div>
+        <div><strong style="color:var(--text)">Natalia Jaramillo</strong> — Especialista en planificación tributaria y arquitectura patrimonial para personas naturales y empresarios.</div>
+      </div>
+      <div class="proof-item">
+        <div class="proof-icon">✓</div>
+        <div>Estrategias 100% legales basadas en el Estatuto Tributario vigente. Sin atajos, sin riesgos.</div>
+      </div>
+      <div class="proof-item">
+        <div class="proof-icon">✓</div>
+        <div>Diagnóstico inicial gratuito de 45 minutos por videollamada. Sin compromiso.</div>
+      </div>
+    </div>
+    <div class="proof-stat">
+      <div class="stat-box">
+        <div class="stat-number">+120</div>
+        <div class="stat-label">Clientes asesorados</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-number">18%</div>
+        <div class="stat-label">Ahorro promedio</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-number">4.9★</div>
+        <div class="stat-label">Calificación</div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
