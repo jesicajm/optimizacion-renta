@@ -94,44 +94,109 @@ async function submitLead() {
   btn.disabled = true;
   btn.textContent = 'Procesando...';
   
+  // ===== Recopilar TODOS los datos ingresados y resultados =====
   const lab = val('lab'), cap = val('cap'), nolab = val('nolab');
-  const ingresosBrutos = lab + cap + nolab;
-  
+  const total = lab + cap + nolab;
+  const s = val('salud') || total * 0.04;
+  const pe = val('pension') || total * 0.04;
+  const fsp = val('fsp');
+  const incr = s + pe + fsp;
+  const neto = Math.max(0, total - incr);
+  const UVT_val = 52374;
+  const lim = Math.min(neto * 0.4, 1340 * UVT_val);
+
+  const volPen = val('volPen'), afc = val('afc'), intViv = val('intViv');
+  const medPrep = val('medPrep'), deps = val('deps'), gmf = val('gmf');
+
+  const dedRentaExenta = Math.min(neto * 0.25, 790 * UVT_val);
+  const dedVolPen = Math.min(volPen, 3800 * UVT_val);
+  const dedAfc = Math.min(afc, 3800 * UVT_val);
+  const dedIntViv = Math.min(intViv, 1200 * UVT_val);
+  const dedMedPrep = Math.min(medPrep, 192 * UVT_val);
+  const dedDeps = Math.min(deps, 4) * 72 * UVT_val;
+  const dedGmf = gmf * 0.5;
+
+  const sumDeducciones = dedRentaExenta + dedVolPen + dedAfc + dedIntViv + dedMedPrep + dedDeps + dedGmf;
+  const aplicable = Math.min(sumDeducciones, lim);
+  const exceso = Math.max(0, sumDeducciones - lim);
+  const espacio = Math.max(0, lim - aplicable);
+  const rl = Math.max(0, neto - aplicable);
+  const rlUVT = rl / UVT_val;
+
+  const TABLA_LOCAL = [
+    { desde: 0, hasta: 1090, tarifa: 0, base: 0 },
+    { desde: 1090, hasta: 1700, tarifa: 0.19, base: 0 },
+    { desde: 1700, hasta: 4100, tarifa: 0.28, base: 116 },
+    { desde: 4100, hasta: 8670, tarifa: 0.33, base: 788 },
+    { desde: 8670, hasta: 18970, tarifa: 0.35, base: 1296 },
+    { desde: 18970, hasta: 31000, tarifa: 0.37, base: 4901 },
+    { desde: 31000, hasta: 100000, tarifa: 0.39, base: 9352 },
+  ];
+  function calcLocal(uvt) {
+    for (let i = TABLA_LOCAL.length - 1; i >= 0; i--) {
+      if (uvt > TABLA_LOCAL[i].desde) return (uvt - TABLA_LOCAL[i].desde) * TABLA_LOCAL[i].tarifa + TABLA_LOCAL[i].base;
+    }
+    return 0;
+  }
+  const imp = Math.round(calcLocal(rlUVT) * UVT_val);
+  const impSin = Math.round(calcLocal(neto / UVT_val) * UVT_val);
+  const ahorro = impSin - imp;
+  const tarifaEfectiva = total > 0 ? ((imp / total) * 100).toFixed(2) + '%' : '0%';
+  const tmObj = TABLA_LOCAL.slice().reverse().find(t => rlUVT >= t.desde);
+  const tarifaMarginal = tmObj ? (tmObj.tarifa * 100) + '%' : '0%';
+
   const leadData = {
+    // Contacto
     nombre, email, telefono,
-    calculadora: 'renta_2026',
-    ingresos_brutos: ingresosBrutos,
+    // Ingresos
     ingresos_laborales: lab,
     ingresos_capital: cap,
     ingresos_no_laborales: nolab,
+    ingresos_brutos: total,
+    // Aportes obligatorios
+    salud: Math.round(s),
+    pension: Math.round(pe),
+    fondo_solidaridad: fsp,
+    total_incrngo: Math.round(incr),
+    ingreso_neto: Math.round(neto),
+    // Deducciones ingresadas
+    input_voluntarios_pension: volPen,
+    input_afc: afc,
+    input_intereses_vivienda: intViv,
+    input_medicina_prepagada: medPrep,
+    input_dependientes: deps,
+    input_gmf: gmf,
+    // Deducciones calculadas
+    ded_renta_exenta_25: Math.round(dedRentaExenta),
+    ded_voluntarios_pension: Math.round(dedVolPen),
+    ded_afc: Math.round(dedAfc),
+    ded_intereses_vivienda: Math.round(dedIntViv),
+    ded_medicina_prepagada: Math.round(dedMedPrep),
+    ded_dependientes: Math.round(dedDeps),
+    ded_gmf_50: Math.round(dedGmf),
+    total_deducciones: Math.round(sumDeducciones),
+    limite_40_pct: Math.round(lim),
+    deducciones_aplicadas: Math.round(aplicable),
+    excedente_no_deducible: Math.round(exceso),
+    espacio_para_optimizar: Math.round(espacio),
+    // Resultado
+    renta_liquida_gravable: Math.round(rl),
+    renta_liquida_uvt: Math.round(rlUVT),
+    impuesto_sin_optimizar: impSin,
+    impuesto_con_optimizacion: imp,
+    ahorro: ahorro,
+    tarifa_efectiva: tarifaEfectiva,
+    tarifa_marginal: tarifaMarginal,
+    obligado_declarar: total >= 1400 * UVT_val,
+    // UTMs y metadata
     utm_source: utmData.source,
     utm_medium: utmData.medium,
     utm_campaign: utmData.campaign,
     utm_content: utmData.content,
     utm_term: utmData.term,
-    pagina: window.location.pathname,
-    user_agent: navigator.userAgent
   };
-  
-  // Save to Firestore
-  try {
-    if (window._fb && window._fb.db) {
-      await window._fb.addDoc(
-        window._fb.collection(window._fb.db, 'leads_calculadora'),
-        { ...leadData, created_at: window._fb.serverTimestamp(), status: 'nuevo' }
-      );
-    }
-  } catch (err) { console.error('Firestore:', err); }
-  
-  // Firebase Function
-  try {
-    if (window._fb && window._fb.functions) {
-      const trackLeadEvent = window._fb.httpsCallable(window._fb.functions, 'trackLeadEvent');
-      trackLeadEvent(leadData).catch(err => console.log('Fn error:', err));
-    }
-  } catch (err) { console.error('Fn:', err); }
 
-  
+  // ===== UI primero (nunca se bloquea por red) =====
   // Google Ads Lead Conversion
   if (typeof gtag !== 'undefined') {
     gtag('event', 'conversion', {
@@ -142,7 +207,7 @@ async function submitLead() {
     gtag('event', 'generate_lead', {
       'event_category': 'calculadora_renta',
       'event_label': 'lead_capturado',
-      'value': ingresosBrutos
+      'value': total
     });
   }
   
@@ -162,45 +227,57 @@ async function submitLead() {
   setTimeout(() => {
     document.getElementById('depuracion').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 300);
+
+  // ===== Guardar en Firestore (fire-and-forget) =====
+  try {
+    if (window._fb && window._fb.db) {
+      window._fb.addDoc(
+        window._fb.collection(window._fb.db, 'leads'),
+        { ...leadData, created_at: window._fb.serverTimestamp(), status: 'nuevo' }
+      ).catch(function(err) { console.log('Firestore:', err); });
+    }
+  } catch (err) { console.error('Firestore:', err); }
 }
 
 // Trigger modal ONLY via the "Calcular" button (onclick in HTML)
 // No auto-triggers on focus or input
 
-// Track Contacto WhatsApp on CTA click
-document.getElementById('cta-link').addEventListener('click', function() {
-  if (typeof gtag !== 'undefined') {
-    gtag('event', 'conversion', {
-      'send_to': 'AW-18090223812/Ef6tCNiN-p0cEMTRi7JD',
-      'value': 100000,
-      'currency': 'COP'
+// Track Contacto WhatsApp on CTA click & Enter key on modal
+document.addEventListener('DOMContentLoaded', function() {
+  const ctaLink = document.getElementById('cta-link');
+  if (ctaLink) {
+    ctaLink.addEventListener('click', function() {
+      if (typeof gtag !== 'undefined') {
+        gtag('event', 'conversion', {
+          'send_to': 'AW-18090223812/Ef6tCNiN-p0cEMTRi7JD',
+          'value': 100000,
+          'currency': 'COP'
+        });
+      }
+      if (typeof fbq !== 'undefined') {
+        fbq('track', 'Contact', { content_name: 'whatsapp_asesor', value: 1, currency: 'COP' });
+      }
     });
   }
-  if (typeof fbq !== 'undefined') {
-    fbq('track', 'Contact', { content_name: 'whatsapp_asesor', value: 1, currency: 'COP' });
-  }
-  try {
-    if (window._fb && window._fb.functions) {
-      const fn = window._fb.httpsCallable(window._fb.functions, 'trackScheduleEvent');
-      fn({ email: document.getElementById('lead-email').value, utm_source: utmData.source, utm_medium: utmData.medium, utm_campaign: utmData.campaign, tipo: 'whatsapp' }).catch(e => {});
-    }
-  } catch (e) {}
-});
 
-// Enter key submits modal
-document.querySelectorAll('#leadModal input').forEach(input => {
-  input.addEventListener('keypress', function(e) { if (e.key === 'Enter') submitLead(); });
+  // Enter key submits modal
+  document.querySelectorAll('#leadModal input').forEach(input => {
+    input.addEventListener('keypress', function(e) { if (e.key === 'Enter') submitLead(); });
+  });
 });
 
 // Update WhatsApp link with UTMs and calculator context
 function updateWhatsAppLink() {
   const adSource = utmData.source !== 'directo' ? utmData.source : 'calculadora_renta';
   const adMedium = utmData.medium !== 'none' ? utmData.medium : 'web';
-  const carga = document.getElementById('cta-question').textContent;
+  const ctaQ = document.getElementById('cta-question');
+  const carga = ctaQ ? ctaQ.textContent : '';
   const mensaje = encodeURIComponent('Hola, acabo de usar la calculadora de renta y quiero saber cómo puedo optimizar mi impuesto. Vine desde: ' + adSource);
-  document.getElementById('cta-link').href = 'https://wa.me/573104278004?text=' + mensaje;
+  const ctaLink = document.getElementById('cta-link');
+  if (ctaLink) ctaLink.href = 'https://wa.me/573104278004?text=' + mensaje;
 }
-updateWhatsAppLink();
+// Defer until DOM is ready
+document.addEventListener('DOMContentLoaded', updateWhatsAppLink);
 
 </script>
 
@@ -211,28 +288,27 @@ updateWhatsAppLink();
   n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
   t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
   document,'script','https://connect.facebook.net/en_US/fbevents.js');
-  fbq('init', 'TU_PIXEL_ID');
+  fbq('init', '3390759824342666');
   fbq('track', 'PageView');
 </script>
-<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=TU_PIXEL_ID&ev=PageView&noscript=1"/></noscript>
+<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=3390759824342666&ev=PageView&noscript=1"/></noscript>
 
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
   import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
-  import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-functions.js";
   const firebaseConfig = {
-    apiKey: "TU_API_KEY",
-    authDomain: "TU_PROYECTO.firebaseapp.com",
-    projectId: "TU_PROYECTO",
-    storageBucket: "TU_PROYECTO.appspot.com",
-    messagingSenderId: "TU_SENDER_ID",
-    appId: "TU_APP_ID"
-  };
+  apiKey: "AIzaSyCgA58jc55MlZIVx5ymyHOlGz7ZjIT877E",
+  authDomain: "optimizar-renta.firebaseapp.com",
+  projectId: "optimizar-renta",
+  storageBucket: "optimizar-renta.firebasestorage.app",
+  messagingSenderId: "76540824176",
+  appId: "1:76540824176:web:5787c6f4ea0974a08a42b5",
+  measurementId: "G-977GW8PR54"
+};
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
-  const functions = getFunctions(app);
-  window._fb = { db, collection, addDoc, serverTimestamp, functions, httpsCallable };
+  window._fb = { db, collection, addDoc, serverTimestamp };
 </script>
 
 <style>
