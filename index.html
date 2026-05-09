@@ -353,7 +353,7 @@ document.addEventListener('DOMContentLoaded', updateWhatsAppLink);
     background: #000;
     border: 1px solid rgba(255,255,255,0.06);
     border-radius: 20px;
-    padding: 44px 40px 32px;
+    padding: 52px 40px 36px;
     max-width: 460px;
     width: 100%;
     box-shadow:
@@ -374,15 +374,33 @@ document.addEventListener('DOMContentLoaded', updateWhatsAppLink);
   .modal-subtitle {
     font-size: 14px;
     color: #fff;
-    margin-bottom: 32px;
+    margin-bottom: 24px;
     line-height: 1.55;
     text-align: center;
     max-width: 360px;
     margin-left: auto;
     margin-right: auto;
   }
- 
-  .form-group { margin-bottom: 18px; }
+
+  .modal-lock {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    padding: 14px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    color: #fff;
+    line-height: 1.5;
+    margin-bottom: 28px;
+  }
+  .modal-lock span:first-child {
+    flex-shrink: 0;
+    line-height: 1.5;
+  }
+
+  .form-group { margin-bottom: 20px; }
   .form-group label {
     display: block;
     font-size: 11px;
@@ -390,7 +408,7 @@ document.addEventListener('DOMContentLoaded', updateWhatsAppLink);
     text-transform: uppercase;
     letter-spacing: 1.4px;
     color: #fff;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
   }
  
   .input-wrapper {
@@ -452,7 +470,7 @@ document.addEventListener('DOMContentLoaded', updateWhatsAppLink);
     font-weight: 600;
     cursor: pointer;
     transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-    margin-top: 10px;
+    margin-top: 14px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -489,9 +507,11 @@ document.addEventListener('DOMContentLoaded', updateWhatsAppLink);
   .form-privacy a:hover { color: #fff; }
  
   @media (max-width: 480px) {
-    .modal-card { padding: 36px 24px 28px; border-radius: 16px; }
+    .modal-card { padding: 40px 22px 28px; border-radius: 16px; }
     .modal-title { font-size: 24px; }
-    .modal-subtitle { font-size: 13px; margin-bottom: 26px; }
+    .modal-subtitle { font-size: 13px; margin-bottom: 22px; }
+    .modal-lock { padding: 12px 14px; font-size: 12.5px; margin-bottom: 24px; }
+    .form-group { margin-bottom: 18px; }
   }
  
   .results-locked { display: none !important; }
@@ -860,7 +880,7 @@ document.addEventListener('DOMContentLoaded', updateWhatsAppLink);
     <div class="proof-items">
       <div class="proof-item">
         <div class="proof-icon">✓</div>
-        <div><strong style="color:var(--text)">Natalia Jaramillo</strong> — Especialista en planificación tributaria y arquitectura patrimonial para personas naturales y empresarios.</div>
+        <div><strong style="color:var(--text)">Natalia Jaramillo</strong> — Especialista en planificación financiera y arquitectura patrimonial para personas naturales y empresarios.</div>
       </div>
       <div class="proof-item">
         <div class="proof-icon">✓</div>
