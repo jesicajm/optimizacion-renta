@@ -314,14 +314,31 @@ document.addEventListener('DOMContentLoaded', updateWhatsAppLink);
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    /* Solo se permiten #000, #fff y #6bdf71 */
+    /* Solo se permiten #000, #fff y #6bdf71. Los blancos translúcidos */
+    /* (rgba 255,255,255,X) crean jerarquía sin introducir grises. */
     --bg1: #000; --bg2: #000; --bg3: #000;
-    --text: #fff; --text-dim: #fff; --text-faint: #fff; --text-xfaint: #fff; --text-bold: #fff;
-    --green: #fff; --green-deep: #fff; --green-bright: #6bdf71;
-    --red: #fff; --red-deep: #fff; --red-hot: #fff;
-    --gold: #fff; --section-label: #fff;
-    --card-bg: #000; --card-border: rgba(255,255,255,0.10);
-    --input-bg: #000; --input-border: rgba(255,255,255,0.12);
+
+    /* Jerarquía de blanco — del más prominente al más tenue */
+    --text: #fff;                          /* primario: contenido principal */
+    --text-bold: #fff;                     /* primario destacado */
+    --text-dim: rgba(255,255,255,0.72);    /* secundario: labels, descripciones */
+    --text-faint: rgba(255,255,255,0.5);   /* terciario: hints, sublabels */
+    --text-xfaint: rgba(255,255,255,0.35); /* fine print, tags, disclaimers */
+
+    /* Antiguos colores semánticos — todos blancos con distintas opacidades */
+    --green: rgba(255,255,255,0.9);
+    --green-deep: rgba(255,255,255,0.72);
+    --green-bright: #6bdf71;               /* único accent permitido */
+    --red: rgba(255,255,255,0.85);
+    --red-deep: rgba(255,255,255,0.7);
+    --red-hot: rgba(255,255,255,0.9);
+    --gold: rgba(255,255,255,0.85);
+    --section-label: rgba(255,255,255,0.78);
+
+    --card-bg: #000;
+    --card-border: rgba(255,255,255,0.10);
+    --input-bg: #000;
+    --input-border: rgba(255,255,255,0.12);
   }
  
   /* ===== LEAD CAPTURE MODAL — Refined dark minimal ===== */
@@ -507,8 +524,8 @@ document.addEventListener('DOMContentLoaded', updateWhatsAppLink);
   .form-privacy a:hover { color: #fff; }
  
   @media (max-width: 480px) {
-    .modal-card { padding: 36px 20px 26px; border-radius: 16px; }
-    .modal-title { font-size: 23px; }
+    .modal-card { padding: 40px 22px 28px; border-radius: 16px; }
+    .modal-title { font-size: 24px; }
     .modal-subtitle { font-size: 13px; margin-bottom: 22px; }
     .modal-lock { padding: 12px 14px; font-size: 12.5px; margin-bottom: 24px; }
     .form-group { margin-bottom: 18px; }
@@ -625,7 +642,7 @@ document.addEventListener('DOMContentLoaded', updateWhatsAppLink);
   .section.green { background: #000; border-color: rgba(107,223,113,0.25); }
   .section h2 { font-size: 13px; font-weight: 700; color: var(--section-label); margin-bottom: 16px; letter-spacing: 0.5px; }
   .section h2.green { color: var(--green); margin-bottom: 4px; }
-  .section .sublabel { font-size: 11px; color: #fff; margin-bottom: 16px; }
+  .section .sublabel { font-size: 11px; color: rgba(255,255,255,0.6); margin-bottom: 16px; }
  
   .field { margin-bottom: 16px; }
   .field-head { display: flex; justify-content: space-between; align-items: baseline; }
@@ -673,7 +690,7 @@ document.addEventListener('DOMContentLoaded', updateWhatsAppLink);
  
   .boxes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
   .box { padding: 16px 18px; background: rgba(0,0,0,0.3); border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
-  .box .box-label { font-size: 10px; color: #fff; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+  .box .box-label { font-size: 10px; color: rgba(255,255,255,0.55); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
   .box .box-val { font-size: 24px; font-weight: 700; font-family: 'DM Mono', monospace; }
   .box .box-sub { font-size: 11px; color: var(--text-faint); margin-top: 3px; }
  
@@ -682,7 +699,7 @@ document.addEventListener('DOMContentLoaded', updateWhatsAppLink);
   .diag-card.green { background: rgba(107,223,113,0.08); color: #6bdf71; }
   .diag-card.red { background: rgba(255,255,255,0.04); color: #fff; }
   .diag-card.greencheck { background: rgba(107,223,113,0.08); color: #6bdf71; }
-  .disclaimer { font-size: 10px; color: #fff; margin-top: 10px; font-style: italic; line-height: 1.5; }
+  .disclaimer { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 10px; font-style: italic; line-height: 1.5; }
  
   details { background: var(--card-bg); border-radius: 16px; padding: 18px 22px; border: 1px solid var(--card-border); margin-bottom: 20px; }
   summary { font-size: 13px; font-weight: 700; color: #fff; cursor: pointer; }
@@ -1025,12 +1042,12 @@ function render() {
   h += row("(−) INCRNGO", incr);
   h += row("Ingreso neto", neto, "", true);
   h += `<div class="divider"></div>`;
-  items.forEach(i => { h += row("(−) " + i.n, i.v, "#8fbf8a"); });
+  items.forEach(i => { h += row("(−) " + i.n, i.v, "#fff"); });
   h += `<div class="divider"></div>`;
   h += row("Total exenciones/deducciones solicitadas", sum, "", true);
-  h += row("Límite aplicable (40% / 1.340 UVT)", lim, "#d0c080");
-  h += row("Efectivamente aplicado", aplicable, "#8fbf8a", true);
-  if (exceso > 0) h += row("⚠ Excedente NO deducible", exceso, "#cf6050");
+  h += row("Límite aplicable (40% / 1.340 UVT)", lim, "#fff");
+  h += row("Efectivamente aplicado", aplicable, "#fff", true);
+  if (exceso > 0) h += row("⚠ Excedente NO deducible", exceso, "#fff");
   if (espacio > 0 && tm > 0) h += row("✦ Espacio disponible para optimizar", espacio, "#6bdf71");
   h += `<div class="divider"></div>`;
   h += row("RENTA LÍQUIDA GRAVABLE", rl, "", true);
@@ -1042,11 +1059,11 @@ function render() {
   const barW = v => Math.max(2, (v / barMax) * 100);
   let c = `<h2 style="margin-bottom:18px">IMPUESTO: SIN vs CON OPTIMIZACIÓN</h2>`;
   c += `<div class="bar-section">
-    <div class="bar-header"><span>Sin optimizar</span><span class="val" style="color:#cf9080">${fmt(impSin)}</span></div>
+    <div class="bar-header"><span>Sin optimizar</span><span class="val" style="color:#fff">${fmt(impSin)}</span></div>
     <div class="bar-track red"><div class="bar-fill red" style="width:${barW(impSin)}%"></div></div>
   </div>`;
   c += `<div class="bar-section">
-    <div class="bar-header"><span>Con optimización</span><span class="val" style="color:#8fbf8a">${fmt(imp)}</span></div>
+    <div class="bar-header"><span>Con optimización</span><span class="val" style="color:#6bdf71">${fmt(imp)}</span></div>
     <div class="bar-track green"><div class="bar-fill green" style="width:${barW(imp)}%"></div></div>
   </div>`;
   c += `<div class="boxes">
@@ -1055,9 +1072,9 @@ function render() {
       <div class="box-val" style="color:#6bdf71">${fmt(ahorro)}</div>
       ${impSin > 0 ? `<div class="box-sub">−${((ahorro / impSin) * 100).toFixed(0)}% del impuesto</div>` : ''}
     </div>
-    <div class="box" style="background:rgba(208,192,128,0.06);border-color:rgba(208,192,128,0.19)">
+    <div class="box" style="background:#000;border-color:rgba(255,255,255,0.10)">
       <div class="box-label">Tarifa efectiva</div>
-      <div class="box-val" style="color:#d0c080">${pct(te)}</div>
+      <div class="box-val" style="color:#fff">${pct(te)}</div>
       <div class="box-sub">sobre ingreso bruto</div>
     </div>
   </div>`;
